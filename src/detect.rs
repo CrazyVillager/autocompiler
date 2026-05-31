@@ -34,65 +34,70 @@ impl OptLevel {
 }
 
 /// C 言語規格。`s` キーで循環切替する（選択中ソースが .c のとき）。
+///
+/// GNU 方言（gnuXX）を採用する。ISO 厳密モード（cXX）だと `__STRICT_ANSI__` が
+/// 定義され、glibc が `clock_gettime` 等の POSIX 拡張宣言を隠してしまうため。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CStd {
-    C11,
-    C17,
-    C23,
+    Gnu11,
+    Gnu17,
+    Gnu23,
 }
 
 impl CStd {
     pub fn flag(&self) -> &'static str {
         match self {
-            CStd::C11 => "-std=c11",
-            CStd::C17 => "-std=c17",
-            CStd::C23 => "-std=c23",
+            CStd::Gnu11 => "-std=gnu11",
+            CStd::Gnu17 => "-std=gnu17",
+            CStd::Gnu23 => "-std=gnu23",
         }
     }
     pub fn label(&self) -> &'static str {
         match self {
-            CStd::C11 => "c11",
-            CStd::C17 => "c17",
-            CStd::C23 => "c23",
+            CStd::Gnu11 => "gnu11",
+            CStd::Gnu17 => "gnu17",
+            CStd::Gnu23 => "gnu23",
         }
     }
     pub fn next(self) -> CStd {
         match self {
-            CStd::C11 => CStd::C17,
-            CStd::C17 => CStd::C23,
-            CStd::C23 => CStd::C11,
+            CStd::Gnu11 => CStd::Gnu17,
+            CStd::Gnu17 => CStd::Gnu23,
+            CStd::Gnu23 => CStd::Gnu11,
         }
     }
 }
 
 /// C++ 規格。`s` キーで循環切替する（選択中ソースが C++ のとき）。
+///
+/// C と同様、POSIX 拡張を見えるよう GNU 方言（gnu++XX）を採用する。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CppStd {
-    Cpp17,
-    Cpp20,
-    Cpp23,
+    Gnupp17,
+    Gnupp20,
+    Gnupp23,
 }
 
 impl CppStd {
     pub fn flag(&self) -> &'static str {
         match self {
-            CppStd::Cpp17 => "-std=c++17",
-            CppStd::Cpp20 => "-std=c++20",
-            CppStd::Cpp23 => "-std=c++23",
+            CppStd::Gnupp17 => "-std=gnu++17",
+            CppStd::Gnupp20 => "-std=gnu++20",
+            CppStd::Gnupp23 => "-std=gnu++23",
         }
     }
     pub fn label(&self) -> &'static str {
         match self {
-            CppStd::Cpp17 => "c++17",
-            CppStd::Cpp20 => "c++20",
-            CppStd::Cpp23 => "c++23",
+            CppStd::Gnupp17 => "gnu++17",
+            CppStd::Gnupp20 => "gnu++20",
+            CppStd::Gnupp23 => "gnu++23",
         }
     }
     pub fn next(self) -> CppStd {
         match self {
-            CppStd::Cpp17 => CppStd::Cpp20,
-            CppStd::Cpp20 => CppStd::Cpp23,
-            CppStd::Cpp23 => CppStd::Cpp17,
+            CppStd::Gnupp17 => CppStd::Gnupp20,
+            CppStd::Gnupp20 => CppStd::Gnupp23,
+            CppStd::Gnupp23 => CppStd::Gnupp17,
         }
     }
 }
@@ -113,8 +118,8 @@ impl Default for BuildConfig {
             opt: OptLevel::O2,
             march_native: false, // 可搬性のため既定 OFF。ベンチ時に m で ON
             cuda_arch: None,
-            c_std: CStd::C17,
-            cpp_std: CppStd::Cpp23,
+            c_std: CStd::Gnu17,
+            cpp_std: CppStd::Gnupp23,
         }
     }
 }
