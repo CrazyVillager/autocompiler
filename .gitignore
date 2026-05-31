@@ -1,0 +1,12 @@
+/target
+
+# autorun が出力する実行ログ
+results.csv
+
+# examples 内のコンパイル生成物（拡張子なしの実行ファイル）は追跡しない。
+# ソースだけを残す。
+/examples/*
+!/examples/*.c
+!/examples/*.cpp
+!/examples/*.cc
+!/examples/*.cu
