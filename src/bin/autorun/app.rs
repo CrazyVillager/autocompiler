@@ -42,6 +42,7 @@ pub struct RunSpec {
     pub program: String,             // 起動するプログラム（mpirun または ./bin）
     pub args: Vec<String>,           // 引数
     pub envs: Vec<(String, String)>, // 環境変数
+    pub stdin: Option<PathBuf>,      // 標準入力に接続するファイル（<binary>.in）
     pub display: String,             // 表示用コマンド行
 }
 
@@ -170,19 +171,34 @@ impl App {
         }
         // Pthread / 逐次は素のまま（program=bin_path、引数・環境変数なし）。
 
-        // 表示用コマンド行（env... program args の順、シェル風）。
+        // <実行ファイル名>.in があれば標準入力に接続する。
+        let stdin_name = format!("{}.in", e.binary);
+        let stdin_full = self.dir.join(&stdin_name);
+        let stdin = if stdin_full.is_file() {
+            Some(stdin_full)
+        } else {
+            None
+        };
+
+        // 表示用コマンド行（env... program args [< name.in] の順、シェル風）。
         let env_disp: String = envs.iter().map(|(k, v)| format!("{k}={v} ")).collect();
         let arg_disp = if args.is_empty() {
             String::new()
         } else {
             format!(" {}", args.join(" "))
         };
-        let display = format!("$ {env_disp}{program}{arg_disp}");
+        let in_disp = if stdin.is_some() {
+            format!(" < {stdin_name}")
+        } else {
+            String::new()
+        };
+        let display = format!("$ {env_disp}{program}{arg_disp}{in_disp}");
 
         RunSpec {
             program,
             args,
             envs,
+            stdin,
             display,
         }
     }
@@ -216,7 +232,13 @@ impl App {
             ""
         };
 
-        let result = compile::run(&spec.program, &spec.args, &spec.envs, &spec.display);
+        let result = compile::run(
+            &spec.program,
+            &spec.args,
+            &spec.envs,
+            spec.stdin.as_deref(),
+            &spec.display,
+        );
 
         // 計測ライブラリを使うソースなら、実行結果を results.csv へ追記する。
         let mut csv_note = String::new();

@@ -3,7 +3,8 @@
 //! 副作用（外部プロセス起動）はこのモジュールに閉じ込める。
 
 use crate::detect::CompilePlan;
-use std::process::Command;
+use std::path::Path;
+use std::process::{Command, Stdio};
 use std::time::Instant;
 
 /// コンパイルまたは実行の結果。UI でそのまま表示できる形にまとめる。
@@ -25,15 +26,44 @@ pub fn compile(plan: &CompilePlan) -> RunResult {
 
 /// 任意のコマンドを環境変数付きで起動する汎用関数（実行ツール autorun 用）。
 ///
-/// `display` は表示用のコマンド行（呼び出し側が整形して渡す）。
-pub fn run(program: &str, args: &[String], envs: &[(String, String)], display: &str) -> RunResult {
+/// `stdin_path` が指定されていればそのファイルを標準入力に接続する
+/// （無指定なら stdin は閉じる）。`display` は表示用のコマンド行。
+pub fn run(
+    program: &str,
+    args: &[String],
+    envs: &[(String, String)],
+    stdin_path: Option<&Path>,
+    display: &str,
+) -> RunResult {
     let start = Instant::now();
     let mut cmd = Command::new(program);
     cmd.args(args);
     for (k, v) in envs {
         cmd.env(k, v);
     }
-    finish(display.to_string(), cmd.output(), start)
+    // stdout / stderr は捕捉。stdin はファイル指定があれば接続、無ければ閉じる。
+    cmd.stdout(Stdio::piped()).stderr(Stdio::piped());
+    match stdin_path {
+        Some(p) => match std::fs::File::open(p) {
+            Ok(f) => {
+                cmd.stdin(Stdio::from(f));
+            }
+            Err(e) => {
+                return RunResult {
+                    command: display.to_string(),
+                    success: false,
+                    stdout: String::new(),
+                    stderr: format!("入力ファイルを開けない: {e}"),
+                    elapsed_ms: start.elapsed().as_millis(),
+                };
+            }
+        },
+        None => {
+            cmd.stdin(Stdio::null());
+        }
+    }
+    let output = cmd.spawn().and_then(|child| child.wait_with_output());
+    finish(display.to_string(), output, start)
 }
 
 /// `nvidia-smi` で実機 GPU の compute capability を取得し、`sm_XX` 形式で返す。
