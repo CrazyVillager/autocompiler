@@ -15,7 +15,10 @@ pub const BLUE: Color = Color::Rgb(0x83, 0xa5, 0x98); // bright blue   C++
 pub const AQUA: Color = Color::Rgb(0x8e, 0xc0, 0x7c); // bright aqua   CUDA・コマンド
 pub const ORANGE: Color = Color::Rgb(0xfe, 0x80, 0x19); // bright orange アクセント
 
-/// 全ウィジェット共通の背景・前景スタイル。
+/// 全ウィジェット共通の前景スタイル。
+///
+/// 背景は `Color::Reset`（端末のデフォルト背景）とし、端末側の透過設定を活かす。
+/// 選択ハイライト等、個別に塗りたい箇所は呼び出し側で `bg` を上書きする。
 pub fn base() -> ratatui::style::Style {
-    ratatui::style::Style::new().bg(BG).fg(FG)
+    ratatui::style::Style::new().fg(FG).bg(Color::Reset)
 }
